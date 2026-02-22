@@ -1,27 +1,38 @@
-name: Windows_Remote_Access
+name: Linux GUI Remote
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
 
     steps:
-      - name: Create User
+      - name: Install Desktop + VNC
         run: |
-          net user hacker Password123! /add
-          net localgroup administrators hacker /add
+          sudo apt update
+          sudo apt install -y xfce4 xfce4-goodies tightvncserver novnc websockify curl
 
-      - name: Enable RDP
+      - name: Setup VNC Password
         run: |
-          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          mkdir -p ~/.vnc
+          echo "123456" | vncpasswd -f > ~/.vnc/passwd
+          chmod 600 ~/.vnc/passwd
 
-      - name: Download Cloudflared
+      - name: Start VNC Server
         run: |
-          curl -L -o cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
+          vncserver :1 -geometry 1280x720
+      
+      - name: Start noVNC
+        run: |
+          websockify --web=/usr/share/novnc/ 6080 localhost:5901 &
+
+      - name: Install Cloudflared
+        run: |
+          curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
 
       - name: Start Tunnel
         run: |
-          .\cloudflared.exe tunnel --url tcp://localhost:3389
+          ./cloudflared tunnel --url http://localhost:6080
