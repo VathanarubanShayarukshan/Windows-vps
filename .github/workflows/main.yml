@@ -1,0 +1,27 @@
+name: Windows Remote Access
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Create User
+        run: |
+          net user hacker Password123! /add
+          net localgroup administrators hacker /add
+
+      - name: Enable RDP
+        run: |
+          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Download Cloudflared
+        run: |
+          curl -L -o cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
+
+      - name: Start Tunnel
+        run: |
+          .\cloudflared.exe tunnel --url tcp://localhost:3389
