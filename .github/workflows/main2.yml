@@ -1,4 +1,4 @@
-name: Kali Linux Web VPS 2
+name: Kali Web Terminal 3
 
 on:
   workflow_dispatch:
@@ -12,7 +12,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y docker.io
-          sudo systemctl start docker
 
       - name: Install Cloudflared
         run: |
@@ -22,8 +21,11 @@ jobs:
 
       - name: Run Kali Container
         run: |
-          sudo docker run -d -p 7681:7681 kalilinux/kali-rolling \
-          bash -c "apt update && apt install -y ttyd && ttyd -p 7681 bash"
+          sudo docker run -d --name kali -p 7681:7681 kalilinux/kali-rolling \
+          bash -c "apt update && apt install -y curl && \
+          curl -L https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.x86_64 -o /usr/local/bin/ttyd && \
+          chmod +x /usr/local/bin/ttyd && \
+          /usr/local/bin/ttyd -p 7681 bash"
 
       - name: Start Tunnel
         run: |
