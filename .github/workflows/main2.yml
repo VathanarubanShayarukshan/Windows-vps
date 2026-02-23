@@ -1,4 +1,4 @@
-name: Kali Linux Web VPS
+name: Kali Linux Web VPS 2
 
 on:
   workflow_dispatch:
@@ -8,17 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Update System
+      - name: Install Docker
         run: |
           sudo apt update
-
-      - name: Install Kali Tools
-        run: |
-          sudo apt install -y kali-linux-default
-
-      - name: Install ttyd (Web Terminal)
-        run: |
-          sudo apt install -y ttyd
+          sudo apt install -y docker.io
+          sudo systemctl start docker
 
       - name: Install Cloudflared
         run: |
@@ -26,9 +20,11 @@ jobs:
           chmod +x cloudflared-linux-amd64
           sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
 
-      - name: Start Web Terminal + Tunnel
+      - name: Run Kali Container
         run: |
-          ttyd -p 7681 bash &
-          sleep 5
-          cloudflared tunnel --url http://localhost:7681 --no-autoupdate        run: |
-          ./cloudflared tunnel --url http://localhost:6080
+          sudo docker run -d -p 7681:7681 kalilinux/kali-rolling \
+          bash -c "apt update && apt install -y ttyd && ttyd -p 7681 bash"
+
+      - name: Start Tunnel
+        run: |
+          cloudflared tunnel --url http://localhost:7681 --no-autoupdate
