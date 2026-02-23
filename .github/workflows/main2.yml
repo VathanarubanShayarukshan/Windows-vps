@@ -1,38 +1,34 @@
-name: Linux GUI Remote
+name: Kali Linux Web VPS
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  kali:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
-
     steps:
-      - name: Install Desktop + VNC
+
+      - name: Update System
         run: |
           sudo apt update
-          sudo apt install -y xfce4 xfce4-goodies tightvncserver novnc websockify curl
 
-      - name: Setup VNC Password
+      - name: Install Kali Tools
         run: |
-          mkdir -p ~/.vnc
-          echo "123456" | vncpasswd -f > ~/.vnc/passwd
-          chmod 600 ~/.vnc/passwd
+          sudo apt install -y kali-linux-default
 
-      - name: Start VNC Server
+      - name: Install ttyd (Web Terminal)
         run: |
-          vncserver :1 -geometry 1280x720
-      
-      - name: Start noVNC
-        run: |
-          websockify --web=/usr/share/novnc/ 6080 localhost:5901 &
+          sudo apt install -y ttyd
 
       - name: Install Cloudflared
         run: |
-          curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-          chmod +x cloudflared
+          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared-linux-amd64
+          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
 
-      - name: Start Tunnel
+      - name: Start Web Terminal + Tunnel
         run: |
+          ttyd -p 7681 bash &
+          sleep 5
+          cloudflared tunnel --url http://localhost:7681 --no-autoupdate        run: |
           ./cloudflared tunnel --url http://localhost:6080
